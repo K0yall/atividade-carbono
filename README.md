@@ -1,7 +1,7 @@
 # Trabalho 02 - Programação Funcional
 
 **Tema:** Mercado de Carbono (créditos, emissões, compensação)  
-**Aluno:** [Seu nome aqui]
+**Aluno:** Felipe José Sens e Lucas Gilmar da Silva
 
 ---
 
