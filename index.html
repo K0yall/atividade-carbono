@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mercado de Carbono</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #f7f7f7;
+            color: #222;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            margin-top: 6px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            background: #0078d4;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #005fa3;
+        }
+
+        .atividade {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .resultado {
+            margin-top: 25px;
+            padding: 15px;
+            background: #e9f5ee;
+            border-left: 5px solid #4caf50;
+            white-space: pre-wrap;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Mercado de Carbono</h1>
+
+        <label>Preço por tonelada (R$):</label>
+        <input type="number" id="preco" min="0" step="0.01" />
+
+        <label>Créditos disponíveis (t):</label>
+        <input type="number" id="creditos" min="0" />
+
+        <div id="atividadesContainer">
+            <h3>Atividades</h3>
+        </div>
+
+        <button id="addAtividade">+ Adicionar Atividade</button>
+        <button id="calcular">Calcular</button>
+
+        <div id="resultado" class="resultado"></div>
+    </div>
+
+    <footer>
+        Desenvolvido por: Lucas Gilmar da Silva e Felipe José Sens
+    </footer>
+
+    <script>
+        const atividadesContainer = document.getElementById("atividadesContainer");
+        const addAtividadeBtn = document.getElementById("addAtividade");
+        const calcularBtn = document.getElementById("calcular");
+        const resultadoDiv = document.getElementById("resultado");
+
+        function criarCampoAtividade() {
+            const div = document.createElement("div");
+            div.className = "atividade";
+            div.innerHTML = `
+        <div style="display: flex; gap: 24px; align-items: flex-end;">
+            <div style="flex: 2; min-width: 180px;">
+                <label>Nome da atividade:</label>
+                <input type="text" class="nome" placeholder="Ex: Transporte" style="font-size:1.1em; padding:12px;" />
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+                <label>Emissões por unidade (t):</label>
+                <input type="number" class="emissao" min="0" step="0.01" style="font-size:1.1em; padding:12px;" />
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+                <label>Quantidade de unidades:</label>
+                <input type="number" class="unidades" min="0" style="font-size:1.1em; padding:12px;" />
+            </div>
+            <button type="button" class="removerAtividade" title="Remover atividade" style="background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 12px 16px; margin-left: 8px; cursor: pointer; font-size: 1.3em;">✖</button>
+        </div>
+    `;
+            div.querySelector('.removerAtividade').addEventListener('click', function() {
+                div.remove();
+            });
+            atividadesContainer.appendChild(div);
+        }
+
+        function validarNumero(valor) {
+            const v = parseFloat(valor);
+            return isNaN(v) || v < 0 ? null : v;
+        }
+
+        function calcularEmissaoTotal(a) {
+            return a.emissao_por_unidade * a.unidades;
+        }
+
+        function aplicarCreditos(atividades, creditos) {
+            let restante = creditos;
+            return atividades.map(a => {
+                const total = a.emissao_total;
+                const aplicado = Math.min(total, restante);
+                restante -= aplicado;
+                return {
+                    ...a,
+                    credito_aplicado: aplicado,
+                    emissao_liquida: total - aplicado
+                };
+            });
+        }
+
+        function coletarAtividades() {
+            const nodes = atividadesContainer.querySelectorAll(".atividade");
+            const list = [];
+            nodes.forEach(node => {
+                const nome = (node.querySelector(".nome").value || "").trim() || "Sem nome";
+                const emissao = validarNumero(node.querySelector(".emissao").value);
+                const unidades = validarNumero(node.querySelector(".unidades").value);
+                if (emissao === null || unidades === null) return;
+                const a = {
+                    nome,
+                    emissao_por_unidade: emissao,
+                    unidades,
+                    emissao_total: calcularEmissaoTotal({ emissao_por_unidade: emissao, unidades })
+                };
+                list.push(a);
+            });
+            return list;
+        }
+
+        addAtividadeBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            criarCampoAtividade();
+        });
+
+        calcularBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            resultadoDiv.textContent = "";
+            const preco = validarNumero(document.getElementById("preco").value);
+            const creditos = validarNumero(document.getElementById("creditos").value);
+            if (preco === null || creditos === null) {
+                resultadoDiv.textContent = "Preencha preço e créditos com valores válidos (>= 0).";
+                return;
+            }
+            const atividades = coletarAtividades();
+            if (atividades.length === 0) {
+                resultadoDiv.textContent = "Adicione ao menos uma atividade com valores válidos.";
+                return;
+            }
+            const atividadesComCred = aplicarCreditos(atividades, creditos);
+            let totalEmissaoBruta = 0;
+            let totalEmissaoLiquida = 0;
+            let totalReceita = 0;
+            const linhas = atividadesComCred.map(a => {
+                totalEmissaoBruta += a.emissao_total;
+                totalEmissaoLiquida += a.emissao_liquida;
+                const receita = a.credito_aplicado * preco;
+                totalReceita += receita;
+                return `Atividade: ${a.nome}\n  Emissão bruta (t): ${a.emissao_total.toFixed(2)}\n  Créditos aplicados (t): ${a.credito_aplicado.toFixed(2)}\n  Emissão líquida (t): ${a.emissao_liquida.toFixed(2)}\n  Receita gerada (R$): ${receita.toFixed(2)}\n`;
+            });
+            linhas.push(`\nTotais:\n  Emissão bruta total (t): ${totalEmissaoBruta.toFixed(2)}\n  Emissão líquida total (t): ${totalEmissaoLiquida.toFixed(2)}\n  Receita total (R$): ${totalReceita.toFixed(2)}`);
+            resultadoDiv.textContent = linhas.join("\n");
+        });
+
+        // create an initial atividade field
+        criarCampoAtividade();
+    </script>
+</body>
+
+</html>
